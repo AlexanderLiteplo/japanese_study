@@ -4,8 +4,9 @@
 
 1. **Install TTS dependencies (optional for audio):**
    ```bash
+   cd kokoro
    source tts_env/bin/activate  # Activate the virtual environment
-   pip install kokoro soundfile scipy numpy torch transformers huggingface-hub loguru misaki[ja] spacy phonemizer num2words
+   pip install -r requirements_simple_tts.txt
    ```
 
 2. **Start the web server:**
@@ -14,8 +15,10 @@
    python3 -m http.server 8000
    ```
 
-3. **Start TTS server (in another terminal):**
+3. **Start TTS server (optional, in another terminal):**
    ```bash
+   cd kokoro
+   source tts_env/bin/activate
    python simple_tts_server.py
    ```
 
@@ -35,12 +38,25 @@
    - 🟠 **HARD** - Difficult, some memory
    - 🟢 **GOOD** - Recalled with effort
    - 🟣 **EASY** - Perfect recall
+5. **Click the 📊 button** (right side) to view your study dashboard with progress stats!
 
 ## 💾 Progress Saving
 
-- Progress is automatically saved to your browser's local storage
+- Progress is **automatically saved** after each review to browser localStorage
 - Click **"Export Progress"** to download your progress as a JSON file
-- Your progress persists between study sessions
+- **To persist progress permanently**: Save the downloaded file as `flashcard_generation/flashcard_generation/flashcard_progress.json`
+- Your progress in localStorage persists between browser sessions, but to save it permanently you need to export and replace the JSON file
+
+## 📊 Study Dashboard
+
+Click the **📊 button** on the right side to open your study dashboard! It shows:
+
+- **Total Studied** - All cards you've ever studied
+- **Studied Today** - Cards studied in the last 24 hours
+- **Studied This Week** - Cards studied in the last 7 days
+- **Current Streak** - Consecutive days with at least one study
+- **Accuracy Rate** - Your overall correct/incorrect ratio with progress bar
+- **Avg Difficulty** - Average ease factor of studied cards
 
 ## 🎯 Features
 
@@ -49,10 +65,20 @@
 - ✅ **Progress Tracking** - Statistics and streaks
 - ✅ **Card Flipping** - English → Japanese reveal with **automatic audio!** 🔊
 - ✅ **Text-to-Speech** - Kokoro TTS for pronunciation
+- ✅ **Study Dashboard** - Progress stats and analytics 📊
 - ✅ **Mobile Friendly** - Works on all devices
 - ✅ **No Installation** - Just open in browser
 
 ## 🔧 Troubleshooting
+
+### Progress Not Saving?
+- **Open browser developer tools** (F12) and check the Console tab
+- Look for messages like "✅ Progress saved to localStorage successfully"
+- Use the **debug buttons** below the stats to test saving/loading:
+  - **Debug Save**: Manually trigger save and check console
+  - **Debug Load**: Manually trigger load and check console
+  - **Clear Storage**: Reset localStorage and reload page
+- **Export Progress** to download your current progress as a file
 
 ### CORS Error?
 If you see "CORS policy" errors:
@@ -60,7 +86,7 @@ If you see "CORS policy" errors:
 - **Use the web server URL**: `http://127.0.0.1:8000/study.html`
 
 ### TTS Not Working?
-- Make sure the TTS server is running: `source tts_env/bin/activate && python simple_tts_server.py`
+- Make sure the TTS server is running: `cd kokoro && source tts_env/bin/activate && python simple_tts_server.py`
 - Check that voices are loaded at: `http://localhost:8001/health`
 - ✅ **Kokoro TTS is now fully functional** with Japanese voices (jf_alpha, jf_gong, jm_kumo)
 - Test audio generation: `curl -X POST http://localhost:8001/tts -H "Content-Type: application/json" -d '{"text":"こんにちは"}'`

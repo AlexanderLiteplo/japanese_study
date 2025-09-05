@@ -229,6 +229,122 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* Dashboard Sidebar */
+        .dashboard {
+            position: fixed;
+            right: 0;
+            top: 0;
+            width: 280px;
+            height: 100vh;
+            background: #f8f9fa;
+            border-left: 2px solid #e9ecef;
+            padding: 20px;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+            overflow-y: auto;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .dashboard.open {
+            transform: translateX(0);
+        }
+
+        .dashboard-toggle {
+            position: fixed;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1001;
+            transition: all 0.3s ease;
+        }
+
+        .dashboard-toggle:hover {
+            background: #0056b3;
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .dashboard-toggle::before {
+            content: '📊';
+            font-size: 20px;
+        }
+
+        .dashboard.open + .dashboard-toggle::before {
+            content: '✕';
+        }
+
+        .dashboard h2 {
+            color: #333;
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-left: 4px solid #007bff;
+        }
+
+        .stat-card.today {
+            border-left-color: #28a745;
+        }
+
+        .stat-card.week {
+            border-left-color: #ffc107;
+        }
+
+        .stat-card.streak {
+            border-left-color: #dc3545;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #333;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .stat-subtitle {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 3px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #007bff, #0056b3);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
         @media (max-width: 600px) {
             .buttons {
                 flex-direction: column;
@@ -241,6 +357,15 @@
 
             .card-container {
                 height: 250px;
+            }
+
+            .dashboard {
+                width: 100%;
+                padding: 15px;
+            }
+
+            .dashboard-toggle {
+                right: 10px;
             }
         }
     </style>
@@ -300,6 +425,52 @@
 
         <div id="message" class="message" style="display: none;"></div>
     </div>
+
+    <!-- Dashboard Sidebar -->
+    <div class="dashboard" id="dashboard">
+        <h2>📊 Study Dashboard</h2>
+
+        <div class="stat-card">
+            <span class="stat-value" id="total-studied">0</span>
+            <div class="stat-label">Total Studied</div>
+            <div class="stat-subtitle">All time</div>
+        </div>
+
+        <div class="stat-card today">
+            <span class="stat-value" id="studied-today">0</span>
+            <div class="stat-label">Studied Today</div>
+            <div class="stat-subtitle">Last 24 hours</div>
+        </div>
+
+        <div class="stat-card week">
+            <span class="stat-value" id="studied-week">0</span>
+            <div class="stat-label">Studied This Week</div>
+            <div class="stat-subtitle">Last 7 days</div>
+        </div>
+
+        <div class="stat-card streak">
+            <span class="stat-value" id="current-streak">0</span>
+            <div class="stat-label">Current Streak</div>
+            <div class="stat-subtitle">Days in a row</div>
+        </div>
+
+        <div class="stat-card">
+            <span class="stat-value" id="accuracy-rate">0%</span>
+            <div class="stat-label">Accuracy Rate</div>
+            <div class="stat-subtitle" id="correct-incorrect">0/0 correct</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="accuracy-bar" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <span class="stat-value" id="avg-difficulty">0.0</span>
+            <div class="stat-label">Avg Difficulty</div>
+            <div class="stat-subtitle">Ease factor</div>
+        </div>
+    </div>
+
+    <button class="dashboard-toggle" id="dashboard-toggle" title="Toggle Dashboard"></button>
 
     <script>
         // Anki SM-2 Algorithm Implementation (embedded)
@@ -382,27 +553,37 @@
 
             async init() {
                 try {
+                    console.log('🚀 Initializing Study App...');
                     await this.loadData();
+                    console.log('📚 Flashcards loaded:', this.flashcards.length);
+                    console.log('📊 Initial progress data loaded:', this.progressData.length);
+
                     this.loadProgressFromStorage(); // Load any saved progress from localStorage
                     this.updateStats();
+                    this.updateDashboardStats(); // Initialize dashboard
                     this.showNextCard();
                     this.bindEvents();
                     this.hideLoading();
+                    console.log('✅ Study App initialized successfully');
                 } catch (error) {
-                    console.error('Error initializing app:', error);
+                    console.error('❌ Error initializing app:', error);
                     this.showMessage('Error loading flashcards. Please check the console.');
                 }
             }
 
             async loadData() {
                 // Load flashcards and progress data
+                console.log('Loading flashcards and progress data...');
                 const [flashcardsResponse, progressResponse] = await Promise.all([
                     fetch('flashcard_generation/flashcard_generation/flashcards_with_ids.json'),
                     fetch('flashcard_generation/flashcard_generation/flashcard_progress.json')
                 ]);
 
                 const baseCards = await flashcardsResponse.json();
+                console.log('Loaded flashcards:', baseCards.length);
+
                 this.progressData = await progressResponse.json();
+                console.log('Loaded progress data:', this.progressData.length);
 
                 // Merge data
                 const progressMap = new Map(this.progressData.map(p => [p.id, p]));
@@ -450,6 +631,85 @@
                 document.getElementById('due-count').textContent = `Due: ${this.dueCards.length}`;
                 document.getElementById('new-count').textContent = `New: ${newCards}`;
                 document.getElementById('studied-count').textContent = `Studied: ${studiedCards}`;
+
+                // Update dashboard stats
+                this.updateDashboardStats();
+            }
+
+            updateDashboardStats() {
+                const now = new Date();
+                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                const weekAgo = new Date(today);
+                weekAgo.setDate(weekAgo.getDate() - 7);
+
+                console.log('📊 Updating dashboard stats...');
+                console.log('📋 Total flashcards:', this.flashcards.length);
+                console.log('📊 Total progress data:', this.progressData.length);
+
+                // Calculate stats from progressData (not flashcards!)
+                const studiedProgress = this.progressData.filter(progress => progress.date_last_studied !== null);
+                console.log('📚 Progress items with date_last_studied:', studiedProgress.length);
+
+                // Total studied
+                document.getElementById('total-studied').textContent = studiedProgress.length;
+
+                // Studied today
+                const studiedToday = studiedProgress.filter(progress => {
+                    const cardDate = new Date(progress.date_last_studied);
+                    return cardDate >= today;
+                }).length;
+                document.getElementById('studied-today').textContent = studiedToday;
+
+                // Studied this week
+                const studiedThisWeek = studiedProgress.filter(progress => {
+                    const cardDate = new Date(progress.date_last_studied);
+                    return cardDate >= weekAgo;
+                }).length;
+                document.getElementById('studied-week').textContent = studiedThisWeek;
+
+                // Current streak (simplified - days with at least one study)
+                const streak = this.calculateStreak();
+                document.getElementById('current-streak').textContent = streak;
+
+                // Accuracy rate
+                const totalCorrect = studiedProgress.reduce((sum, progress) => sum + progress.total_correct, 0);
+                const totalIncorrect = studiedProgress.reduce((sum, progress) => sum + progress.total_incorrect, 0);
+                const totalAttempts = totalCorrect + totalIncorrect;
+                const accuracyRate = totalAttempts > 0 ? Math.round((totalCorrect / totalAttempts) * 100) : 0;
+
+                document.getElementById('accuracy-rate').textContent = `${accuracyRate}%`;
+                document.getElementById('correct-incorrect').textContent = `${totalCorrect}/${totalAttempts} correct`;
+                document.getElementById('accuracy-bar').style.width = `${accuracyRate}%`;
+
+                // Average difficulty
+                const avgDifficulty = studiedProgress.length > 0
+                    ? (studiedProgress.reduce((sum, progress) => sum + progress.ease_factor, 0) / studiedProgress.length).toFixed(1)
+                    : '0.0';
+                document.getElementById('avg-difficulty').textContent = avgDifficulty;
+            }
+
+            calculateStreak() {
+                // Simple streak calculation - count consecutive days with studies
+                const now = new Date();
+                let streak = 0;
+                let checkDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+                while (true) {
+                    const studiesOnDate = this.progressData.filter(progress => {
+                        if (!progress.date_last_studied) return false;
+                        const cardDate = new Date(progress.date_last_studied);
+                        return cardDate.toDateString() === checkDate.toDateString();
+                    });
+
+                    if (studiesOnDate.length > 0) {
+                        streak++;
+                        checkDate.setDate(checkDate.getDate() - 1);
+                    } else {
+                        break;
+                    }
+                }
+
+                return streak;
             }
 
             showNextCard() {
@@ -506,6 +766,62 @@
 
                 // Export button
                 document.getElementById('export-btn').addEventListener('click', () => this.exportProgress());
+
+                // Dashboard toggle
+                document.getElementById('dashboard-toggle').addEventListener('click', () => {
+                    const dashboard = document.getElementById('dashboard');
+                    const toggleBtn = document.getElementById('dashboard-toggle');
+                    dashboard.classList.toggle('open');
+                    toggleBtn.classList.toggle('active');
+                });
+
+                // Auto-save on page unload/refresh
+                window.addEventListener('beforeunload', () => {
+                    console.log('💾 Page unloading - auto-saving progress...');
+                    this.saveProgress();
+                });
+
+                // Auto-save every 30 seconds (backup)
+                setInterval(() => {
+                    console.log('⏰ Periodic auto-save...');
+                    this.saveProgress();
+                }, 30000);
+
+                // Temporary debug button
+                const debugBtn = document.createElement('button');
+                debugBtn.textContent = 'Debug Stats';
+                debugBtn.style.position = 'fixed';
+                debugBtn.style.top = '10px';
+                debugBtn.style.left = '10px';
+                debugBtn.style.zIndex = '9999';
+                debugBtn.style.background = '#007bff';
+                debugBtn.style.color = 'white';
+                debugBtn.style.border = 'none';
+                debugBtn.style.padding = '10px';
+                debugBtn.style.borderRadius = '5px';
+                debugBtn.onclick = () => {
+                    console.log('=== DEBUG STATS ===');
+                    console.log('Flashcards length:', this.flashcards.length);
+                    console.log('ProgressData length:', this.progressData.length);
+                    
+                    const studiedCards = this.flashcards.filter(card => card.date_last_studied);
+                    console.log('Cards with date_last_studied:', studiedCards.length);
+                    
+                    const studiedProgress = this.progressData.filter(item => item.date_last_studied !== null);
+                    console.log('Progress items with date_last_studied:', studiedProgress.length);
+                    
+                    if (studiedCards.length > 0) {
+                        console.log('Sample studied card:', studiedCards[0]);
+                    }
+                    if (studiedProgress.length > 0) {
+                        console.log('Sample studied progress:', studiedProgress[0]);
+                    }
+                    
+                    alert(`Flashcards: ${this.flashcards.length}\nProgress: ${this.progressData.length}\nStudied Cards: ${studiedCards.length}\nStudied Progress: ${studiedProgress.length}`);
+                };
+                document.body.appendChild(debugBtn);
+
+                console.log('✅ All event listeners bound successfully');
             }
 
             toggleCard() {
@@ -608,8 +924,18 @@
             }
 
             reviewCard(quality) {
+                console.log('Reviewing card with quality:', quality);
                 const card = this.dueCards[this.currentCardIndex];
+                console.log('Current card:', card.id, card.english);
+
                 const updatedCard = AnkiAlgorithm.processReview(card, quality);
+                console.log('Updated card stats:', {
+                    ease_factor: updatedCard.ease_factor,
+                    interval: updatedCard.interval,
+                    repetitions: updatedCard.repetitions,
+                    date_last_studied: updatedCard.date_last_studied,
+                    num_times_studied: updatedCard.num_times_studied
+                });
 
                 // Update in main flashcards array
                 const mainIndex = this.flashcards.findIndex(c => c.id === card.id);
@@ -633,6 +959,10 @@
                         total_correct_streak: updatedCard.total_correct_streak,
                         total_incorrect_streak: updatedCard.total_incorrect_streak
                     };
+                    console.log('Progress data updated for card:', card.id);
+                    console.log('Date being saved:', updatedCard.date_last_studied ? updatedCard.date_last_studied.toISOString() : 'null');
+                } else {
+                    console.warn('Progress data not found for card:', card.id);
                 }
 
                 // Save progress
@@ -641,18 +971,77 @@
                 // Remove from due cards and update
                 this.dueCards.splice(this.currentCardIndex, 1);
                 this.updateStats();
+                this.updateDashboardStats(); // Update dashboard after review
                 this.showNextCard();
             }
 
             saveProgress() {
                 try {
-                    // Save to localStorage (browser storage)
-                    localStorage.setItem('flashcard_progress', JSON.stringify(this.progressData));
-                    console.log('Progress saved to localStorage');
+                    console.log('💾 Auto-saving progress...');
+                    
+                    // Save the entire progress data to ensure persistence
+                    const progressJson = JSON.stringify(this.progressData);
+                    const dataSize = new Blob([progressJson]).size;
+                    console.log('📊 Saving full progress data:', this.progressData.length, 'cards');
+                    console.log('💽 Data size:', (dataSize / (1024 * 1024)).toFixed(2), 'MB');
+
+                    // Always try to save full data first
+                    try {
+                        localStorage.setItem('flashcard_progress', progressJson);
+                        localStorage.removeItem('flashcard_progress_modified'); // Clean up compressed version
+                        localStorage.removeItem('flashcard_progress_full');
+                        console.log('✅ Full progress saved to localStorage successfully');
+                    } catch (quotaError) {
+                        if (quotaError.name === 'QuotaExceededError') {
+                            console.warn('⚠️ Full save failed - compressing data...');
+                            // Only save modified cards to reduce size
+                            const modifiedCards = this.progressData.filter(item =>
+                                item.date_last_studied !== null || 
+                                item.num_times_studied > 0 ||
+                                item.ease_factor !== 2.5 ||
+                                item.interval !== 1
+                            );
+                            const compressedJson = JSON.stringify(modifiedCards);
+                            localStorage.setItem('flashcard_progress_modified', compressedJson);
+                            localStorage.setItem('flashcard_progress_full', 'compressed');
+                            console.log('✅ Saved compressed data:', modifiedCards.length, 'modified cards');
+                        } else {
+                            throw quotaError; // Re-throw if it's not a quota error
+                        }
+                    }
+
+                    // Save timestamp for tracking
+                    localStorage.setItem('flashcard_progress_timestamp', new Date().toISOString());
+                    
+                    console.log('✅ Auto-save completed');
+
                 } catch (error) {
-                    console.warn('Error saving progress:', error);
+                    console.error('❌ Error saving progress:', error);
+                    if (error.name === 'QuotaExceededError') {
+                        console.warn('💾 Storage full, saving only modified cards...');
+                        try {
+                            // Emergency save - only modified cards
+                            const modifiedCards = this.progressData.filter(item =>
+                                item.date_last_studied !== null || 
+                                item.num_times_studied > 0 ||
+                                item.ease_factor !== 2.5 ||
+                                item.interval !== 1
+                            );
+                            const emergencyJson = JSON.stringify(modifiedCards);
+                            localStorage.setItem('flashcard_progress_modified', emergencyJson);
+                            localStorage.setItem('flashcard_progress_full', 'quota_exceeded');
+                            console.log('✅ Emergency save completed:', modifiedCards.length, 'cards');
+                            alert('Storage almost full! Only your studied cards were saved. Consider exporting your progress.');
+                        } catch (emergencyError) {
+                            console.error('❌ Emergency save failed:', emergencyError);
+                            alert('Critical: Unable to save progress! Please export immediately.');
+                        }
+                    } else {
+                        alert('Error saving progress: ' + error.message);
+                    }
                 }
             }
+
 
             exportProgress() {
                 try {
@@ -667,6 +1056,7 @@
 
                     URL.revokeObjectURL(url);
                     console.log('Progress exported as file');
+                    alert('Progress file downloaded! Save it as: flashcard_generation/flashcard_generation/flashcard_progress.json');
                 } catch (error) {
                     console.warn('Error exporting progress:', error);
                     alert('Error exporting progress data');
@@ -675,20 +1065,73 @@
 
             loadProgressFromStorage() {
                 try {
-                    const saved = localStorage.getItem('flashcard_progress');
+                    console.log('🔄 Loading progress from localStorage...');
+                    
+                    // Check for full save first
+                    let saved = localStorage.getItem('flashcard_progress');
+                    let isCompressed = false;
+                    
+                    // If no full save, check for compressed save
+                    if (!saved) {
+                        saved = localStorage.getItem('flashcard_progress_modified');
+                        isCompressed = true;
+                        console.log('📦 Loading compressed progress data...');
+                    }
+                    
                     if (saved) {
+                        const dataSize = new Blob([saved]).size;
+                        console.log('💽 Saved data size:', (dataSize / 1024).toFixed(2), 'KB');
+
                         const parsed = JSON.parse(saved);
-                        // Merge with current progress data
-                        parsed.forEach(savedProgress => {
-                            const existingIndex = this.progressData.findIndex(p => p.id === savedProgress.id);
-                            if (existingIndex !== -1) {
-                                this.progressData[existingIndex] = savedProgress;
+                        console.log('📊 Found saved progress data, length:', parsed.length);
+                        console.log('🔍 Sample saved item:', parsed[0]);
+
+                        if (isCompressed) {
+                            console.log('📦 Loading compressed data - only modified cards');
+                            // Merge only the modified cards
+                            let mergedCount = 0;
+                            parsed.forEach(savedProgress => {
+                                const existingIndex = this.progressData.findIndex(p => p.id === savedProgress.id);
+                                if (existingIndex !== -1) {
+                                    this.progressData[existingIndex] = savedProgress;
+                                    mergedCount++;
+                                }
+                            });
+                            console.log('✅ Compressed progress loaded, merged:', mergedCount, 'modified cards');
+                        } else {
+                            console.log('📄 Loading full progress data');
+                            // Only replace if we have complete data (all 900 cards)
+                            if (parsed.length === this.progressData.length) {
+                                this.progressData = parsed;
+                                console.log('✅ Full progress loaded:', this.progressData.length, 'cards');
+                            } else {
+                                console.log('📦 Partial data detected - merging instead of replacing');
+                                // Merge the saved progress with existing data
+                                let mergedCount = 0;
+                                parsed.forEach(savedProgress => {
+                                    const existingIndex = this.progressData.findIndex(p => p.id === savedProgress.id);
+                                    if (existingIndex !== -1) {
+                                        this.progressData[existingIndex] = savedProgress;
+                                        mergedCount++;
+                                    }
+                                });
+                                console.log('✅ Partial progress merged:', mergedCount, 'cards updated');
                             }
-                        });
-                        console.log('Progress loaded from localStorage');
+                        }
+                        
+                        // Check last save timestamp
+                        const timestamp = localStorage.getItem('flashcard_progress_timestamp');
+                        if (timestamp) {
+                            console.log('⏰ Last saved:', new Date(timestamp).toLocaleString());
+                        }
+                        
+                        console.log('✅ Progress successfully loaded from localStorage');
+                    } else {
+                        console.log('📭 No saved progress found in localStorage');
                     }
                 } catch (error) {
-                    console.warn('Error loading progress from storage:', error);
+                    console.error('❌ Error loading progress from localStorage:', error);
+                    alert('Error loading saved progress. Your data might be corrupted.');
                 }
             }
 
