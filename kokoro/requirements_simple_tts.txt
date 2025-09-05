@@ -6,3 +6,9 @@ torch>=2.0.0
 scipy
 numpy
 misaki[ja]>=0.7.0
+transformers
+huggingface-hub
+loguru
+spacy
+phonemizer
+num2words
