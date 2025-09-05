@@ -121,6 +121,30 @@
             line-height: 1.4;
         }
 
+        .sound-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 10px;
+            font-size: 16px;
+            transition: background 0.2s;
+        }
+
+        .sound-btn:hover {
+            background: #2980b9;
+        }
+
+        .sound-btn:active {
+            transform: scale(0.95);
+        }
+
         .word-hiragana {
             font-size: 2rem;
             margin-bottom: 0.5rem;
@@ -250,11 +274,17 @@
                     </div>
                     <div class="card-face card-back" id="card-back">
                         <div class="card-content">
-                            <div class="word-hiragana" id="hiragana-text">Loading...</div>
+                            <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
+                                <div class="word-hiragana" id="hiragana-text">Loading...</div>
+                                <button class="sound-btn" id="word-sound-btn" title="Pronounce word">🔊</button>
+                            </div>
                             <div class="word-kanji" id="kanji-text">Loading...</div>
                             <div id="romaji-text">Loading...</div>
                             <div id="part-of-speech">Loading...</div>
-                            <div id="example-sentence">Loading...</div>
+                            <div style="display: flex; align-items: center; justify-content: center; margin-top: 1rem;">
+                                <div id="example-sentence">Loading...</div>
+                                <button class="sound-btn" id="sentence-sound-btn" title="Pronounce sentence">🔊</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -463,17 +493,117 @@
                 document.getElementById('btn-good').addEventListener('click', () => this.reviewCard(2));
                 document.getElementById('btn-easy').addEventListener('click', () => this.reviewCard(3));
 
+                // Sound buttons
+                document.getElementById('word-sound-btn').addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent card flip when clicking sound button
+                    this.playWordAudio();
+                });
+
+                document.getElementById('sentence-sound-btn').addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent card flip when clicking sound button
+                    this.playSentenceAudio();
+                });
+
                 // Export button
                 document.getElementById('export-btn').addEventListener('click', () => this.exportProgress());
             }
 
             toggleCard() {
+                const wasFlipped = this.isFlipped;
                 this.isFlipped = !this.isFlipped;
                 const cardElement = document.getElementById('card');
+
                 if (this.isFlipped) {
                     cardElement.classList.add('flipped');
+                    // Play audio when flipping to show Japanese side
+                    if (!wasFlipped) {
+                        this.playFlipAudio();
+                    }
                 } else {
                     cardElement.classList.remove('flipped');
+                }
+            }
+
+            async playWordAudio() {
+                if (this.dueCards.length === 0) return;
+
+                const card = this.dueCards[this.currentCardIndex];
+                const text = card.word_hiragana || card.word_kanji;
+
+                if (!text) return;
+
+                try {
+                    console.log('Playing word audio:', text);
+                    await this.callKokoroTTS(text);
+                } catch (error) {
+                    console.error('Error playing word audio:', error);
+                }
+            }
+
+            async playSentenceAudio() {
+                if (this.dueCards.length === 0) return;
+
+                const card = this.dueCards[this.currentCardIndex];
+                const text = card.example_sentence;
+
+                if (!text) return;
+
+                try {
+                    console.log('Playing sentence audio:', text);
+                    await this.callKokoroTTS(text);
+                } catch (error) {
+                    console.error('Error playing sentence audio:', error);
+                }
+            }
+
+            async playFlipAudio() {
+                if (this.dueCards.length === 0) return;
+
+                const card = this.dueCards[this.currentCardIndex];
+                const wordText = card.word_hiragana || card.word_kanji;
+
+                if (!wordText) return;
+
+                try {
+                    console.log('Playing flip audio (word):', wordText);
+                    await this.callKokoroTTS(wordText);
+                } catch (error) {
+                    console.error('Error playing flip audio:', error);
+                    // Don't show alert for flip audio to avoid interrupting study flow
+                }
+            }
+
+            async callKokoroTTS(text) {
+                try {
+                    // Call Kokoro TTS API (assuming backend server is running)
+                    const response = await fetch('http://localhost:8001/tts', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            text: text,
+                            voice: 'jf_alpha' // Japanese female voice
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const audioBlob = await response.blob();
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    const audio = new Audio(audioUrl);
+                    await audio.play();
+
+                    // Clean up
+                    audio.onended = () => {
+                        URL.revokeObjectURL(audioUrl);
+                    };
+
+                } catch (error) {
+                    console.error('Error calling Kokoro TTS:', error);
+                    alert('TTS not available. Make sure the Kokoro server is running on port 8001.');
                 }
             }
 
