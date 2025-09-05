@@ -1,0 +1,27 @@
+{
+  "name": "anki-algorithm",
+  "version": "1.0.0",
+  "description": "Anki SM-2 spaced repetition algorithm implementation for Japanese study",
+  "main": "ankii.js",
+  "types": "ankii.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "example": "ts-node example.ts"
+  },
+  "keywords": [
+    "anki",
+    "spaced-repetition",
+    "sm2",
+    "flashcards",
+    "japanese",
+    "study"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "ts-node": "^10.9.0",
+    "@types/node": "^20.0.0"
+  }
+}

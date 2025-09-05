@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Japanese Flashcards</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: white;
+            padding: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .instructions {
+            background: #fff3cd;
+            color: #856404;
+            padding: 0.5rem;
+            font-size: 0.8rem;
+            text-align: center;
+            border-bottom: 1px solid #ffeaa7;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .export-btn {
+            background: #666;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            margin-left: 1rem;
+        }
+
+        .export-btn:hover {
+            background: #555;
+        }
+
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .card-container {
+            perspective: 1000px;
+            width: 100%;
+            max-width: 500px;
+            height: 300px;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+        }
+
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .card-front {
+            background: #4A90E2;
+            color: white;
+        }
+
+        .card-back {
+            transform: rotateY(180deg);
+            background: #E94B3C;
+            color: white;
+        }
+
+        .card-content {
+            font-size: 1.5rem;
+            line-height: 1.4;
+        }
+
+        .word-hiragana {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .word-kanji {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+            opacity: 0.9;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 120px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn-again {
+            background: #E74C3C;
+            color: white;
+        }
+
+        .btn-hard {
+            background: #F39C12;
+            color: white;
+        }
+
+        .btn-good {
+            background: #27AE60;
+            color: white;
+        }
+
+        .btn-easy {
+            background: #8E44AD;
+            color: white;
+        }
+
+        .message {
+            text-align: center;
+            margin-top: 2rem;
+            color: #666;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4A90E2;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 600px) {
+            .buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn {
+                width: 200px;
+            }
+
+            .card-container {
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="instructions" class="instructions" style="display: none;">
+        ⚠️ For best experience, access this page via: <code>http://127.0.0.1:8000/study.html</code>
+    </div>
+    <div class="header">
+        <h1>Japanese Flashcards</h1>
+        <div class="stats">
+            <span id="due-count">Loading...</span>
+            <span id="new-count">Loading...</span>
+            <span id="studied-count">Loading...</span>
+            <button class="export-btn" id="export-btn">Export Progress</button>
+        </div>
+    </div>
+
+    <div class="main">
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+        </div>
+
+        <div id="study-container" style="display: none;">
+            <div class="card-container">
+                <div class="card" id="card">
+                    <div class="card-face card-front" id="card-front">
+                        <div class="card-content">
+                            <div id="english-text">Loading...</div>
+                        </div>
+                    </div>
+                    <div class="card-face card-back" id="card-back">
+                        <div class="card-content">
+                            <div class="word-hiragana" id="hiragana-text">Loading...</div>
+                            <div class="word-kanji" id="kanji-text">Loading...</div>
+                            <div id="romaji-text">Loading...</div>
+                            <div id="part-of-speech">Loading...</div>
+                            <div id="example-sentence">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="buttons">
+                <button class="btn btn-again" id="btn-again">AGAIN</button>
+                <button class="btn btn-hard" id="btn-hard">HARD</button>
+                <button class="btn btn-good" id="btn-good">GOOD</button>
+                <button class="btn btn-easy" id="btn-easy">EASY</button>
+            </div>
+        </div>
+
+        <div id="message" class="message" style="display: none;"></div>
+    </div>
+
+    <script>
+        // Anki SM-2 Algorithm Implementation (embedded)
+        class AnkiAlgorithm {
+            static INITIAL_EASE_FACTOR = 2.5;
+            static MINIMUM_EASE_FACTOR = 1.3;
+            static INITIAL_INTERVAL = 1;
+            static GRADUATING_INTERVAL = 6;
+
+            static getNextReviewDate(card) {
+                if (!card.date_last_studied) return null;
+                const nextReview = new Date(card.date_last_studied);
+                nextReview.setDate(nextReview.getDate() + card.interval);
+                return nextReview;
+            }
+
+            static isDue(card) {
+                if (!card.date_last_studied) return true;
+                const nextReview = this.getNextReviewDate(card);
+                return new Date() >= nextReview;
+            }
+
+            static processReview(card, quality) {
+                const updatedCard = { ...card };
+                const now = new Date();
+
+                updatedCard.num_times_studied++;
+                updatedCard.total_studied++;
+                updatedCard.date_last_studied = now;
+
+                if (quality === 0) { // AGAIN
+                    updatedCard.repetitions = 0;
+                    updatedCard.interval = 0;
+                    updatedCard.ease_factor = Math.max(this.MINIMUM_EASE_FACTOR, updatedCard.ease_factor - 0.2);
+                    updatedCard.total_incorrect++;
+                    updatedCard.total_incorrect_streak++;
+                    updatedCard.total_correct_streak = 0;
+                } else {
+                    updatedCard.total_correct++;
+                    updatedCard.total_correct_streak++;
+                    updatedCard.total_incorrect_streak = 0;
+
+                    if (quality === 1) { // HARD
+                        updatedCard.ease_factor = Math.max(this.MINIMUM_EASE_FACTOR, updatedCard.ease_factor - 0.15);
+                        updatedCard.interval = Math.min(6, updatedCard.interval * 1.2);
+                        updatedCard.repetitions = Math.max(0, updatedCard.repetitions - 1);
+                    } else if (quality === 2) { // GOOD
+                        if (updatedCard.repetitions === 0) {
+                            updatedCard.interval = this.GRADUATING_INTERVAL;
+                        } else {
+                            updatedCard.interval = Math.round(updatedCard.interval * updatedCard.ease_factor);
+                        }
+                        updatedCard.repetitions++;
+                    } else if (quality === 3) { // EASY
+                        updatedCard.ease_factor += 0.15;
+                        if (updatedCard.repetitions === 0) {
+                            updatedCard.interval = Math.round(this.GRADUATING_INTERVAL * updatedCard.ease_factor * 1.3);
+                        } else {
+                            updatedCard.interval = Math.round(updatedCard.interval * updatedCard.ease_factor * 1.3);
+                        }
+                        updatedCard.repetitions++;
+                    }
+                }
+
+                return updatedCard;
+            }
+        }
+
+        // Main Study App
+        class StudyApp {
+            constructor() {
+                this.flashcards = [];
+                this.progressData = [];
+                this.currentCardIndex = 0;
+                this.dueCards = [];
+                this.isFlipped = false;
+
+                this.init();
+            }
+
+            async init() {
+                try {
+                    await this.loadData();
+                    this.loadProgressFromStorage(); // Load any saved progress from localStorage
+                    this.updateStats();
+                    this.showNextCard();
+                    this.bindEvents();
+                    this.hideLoading();
+                } catch (error) {
+                    console.error('Error initializing app:', error);
+                    this.showMessage('Error loading flashcards. Please check the console.');
+                }
+            }
+
+            async loadData() {
+                // Load flashcards and progress data
+                const [flashcardsResponse, progressResponse] = await Promise.all([
+                    fetch('flashcard_generation/flashcard_generation/flashcards_with_ids.json'),
+                    fetch('flashcard_generation/flashcard_generation/flashcard_progress.json')
+                ]);
+
+                const baseCards = await flashcardsResponse.json();
+                this.progressData = await progressResponse.json();
+
+                // Merge data
+                const progressMap = new Map(this.progressData.map(p => [p.id, p]));
+                this.flashcards = baseCards.map(card => {
+                    const progress = progressMap.get(card.id);
+                    if (!progress) {
+                        return {
+                            ...card,
+                            date_last_studied: null,
+                            num_times_studied: 0,
+                            ease_factor: 2.5,
+                            interval: 1,
+                            repetitions: 0,
+                            total_correct: 0,
+                            total_incorrect: 0,
+                            total_studied: 0,
+                            total_correct_streak: 0,
+                            total_incorrect_streak: 0
+                        };
+                    }
+
+                    return {
+                        ...card,
+                        date_last_studied: progress.date_last_studied ? new Date(progress.date_last_studied) : null,
+                        num_times_studied: progress.num_times_studied,
+                        ease_factor: progress.ease_factor,
+                        interval: progress.interval,
+                        repetitions: progress.repetitions,
+                        total_correct: progress.total_correct,
+                        total_incorrect: progress.total_incorrect,
+                        total_studied: progress.total_studied,
+                        total_correct_streak: progress.total_correct_streak,
+                        total_incorrect_streak: progress.total_incorrect_streak
+                    };
+                });
+
+                this.dueCards = this.flashcards.filter(card => AnkiAlgorithm.isDue(card));
+            }
+
+            updateStats() {
+                const totalCards = this.flashcards.length;
+                const newCards = this.flashcards.filter(card => !card.date_last_studied).length;
+                const studiedCards = totalCards - newCards;
+
+                document.getElementById('due-count').textContent = `Due: ${this.dueCards.length}`;
+                document.getElementById('new-count').textContent = `New: ${newCards}`;
+                document.getElementById('studied-count').textContent = `Studied: ${studiedCards}`;
+            }
+
+            showNextCard() {
+                if (this.dueCards.length === 0) {
+                    this.showMessage('🎉 All caught up! No cards due for review.');
+                    return;
+                }
+
+                this.currentCardIndex = Math.floor(Math.random() * this.dueCards.length);
+                const card = this.dueCards[this.currentCardIndex];
+
+                this.isFlipped = false;
+                this.updateCardDisplay(card);
+                this.showStudyContainer();
+            }
+
+            updateCardDisplay(card) {
+                const cardElement = document.getElementById('card');
+                cardElement.classList.remove('flipped');
+
+                // Front (English)
+                document.getElementById('english-text').textContent = card.english;
+
+                // Back (Japanese)
+                document.getElementById('hiragana-text').textContent = card.word_hiragana;
+                document.getElementById('kanji-text').textContent = card.word_kanji || '';
+                document.getElementById('romaji-text').textContent = card.word_romaji;
+                document.getElementById('part-of-speech').textContent = `(${card.part_of_speech})`;
+                document.getElementById('example-sentence').textContent = card.example_sentence;
+            }
+
+            bindEvents() {
+                // Card click to flip
+                document.getElementById('card').addEventListener('click', () => {
+                    this.toggleCard();
+                });
+
+                // Review buttons
+                document.getElementById('btn-again').addEventListener('click', () => this.reviewCard(0));
+                document.getElementById('btn-hard').addEventListener('click', () => this.reviewCard(1));
+                document.getElementById('btn-good').addEventListener('click', () => this.reviewCard(2));
+                document.getElementById('btn-easy').addEventListener('click', () => this.reviewCard(3));
+
+                // Export button
+                document.getElementById('export-btn').addEventListener('click', () => this.exportProgress());
+            }
+
+            toggleCard() {
+                this.isFlipped = !this.isFlipped;
+                const cardElement = document.getElementById('card');
+                if (this.isFlipped) {
+                    cardElement.classList.add('flipped');
+                } else {
+                    cardElement.classList.remove('flipped');
+                }
+            }
+
+            reviewCard(quality) {
+                const card = this.dueCards[this.currentCardIndex];
+                const updatedCard = AnkiAlgorithm.processReview(card, quality);
+
+                // Update in main flashcards array
+                const mainIndex = this.flashcards.findIndex(c => c.id === card.id);
+                if (mainIndex !== -1) {
+                    this.flashcards[mainIndex] = updatedCard;
+                }
+
+                // Update progress data for saving
+                const progressIndex = this.progressData.findIndex(p => p.id === card.id);
+                if (progressIndex !== -1) {
+                    this.progressData[progressIndex] = {
+                        id: updatedCard.id,
+                        date_last_studied: updatedCard.date_last_studied ? updatedCard.date_last_studied.toISOString() : null,
+                        num_times_studied: updatedCard.num_times_studied,
+                        ease_factor: updatedCard.ease_factor,
+                        interval: updatedCard.interval,
+                        repetitions: updatedCard.repetitions,
+                        total_correct: updatedCard.total_correct,
+                        total_incorrect: updatedCard.total_incorrect,
+                        total_studied: updatedCard.total_studied,
+                        total_correct_streak: updatedCard.total_correct_streak,
+                        total_incorrect_streak: updatedCard.total_incorrect_streak
+                    };
+                }
+
+                // Save progress
+                this.saveProgress();
+
+                // Remove from due cards and update
+                this.dueCards.splice(this.currentCardIndex, 1);
+                this.updateStats();
+                this.showNextCard();
+            }
+
+            saveProgress() {
+                try {
+                    // Save to localStorage (browser storage)
+                    localStorage.setItem('flashcard_progress', JSON.stringify(this.progressData));
+                    console.log('Progress saved to localStorage');
+                } catch (error) {
+                    console.warn('Error saving progress:', error);
+                }
+            }
+
+            exportProgress() {
+                try {
+                    const dataStr = JSON.stringify(this.progressData, null, 2);
+                    const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                    const url = URL.createObjectURL(dataBlob);
+
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = 'flashcard_progress.json';
+                    link.click();
+
+                    URL.revokeObjectURL(url);
+                    console.log('Progress exported as file');
+                } catch (error) {
+                    console.warn('Error exporting progress:', error);
+                    alert('Error exporting progress data');
+                }
+            }
+
+            loadProgressFromStorage() {
+                try {
+                    const saved = localStorage.getItem('flashcard_progress');
+                    if (saved) {
+                        const parsed = JSON.parse(saved);
+                        // Merge with current progress data
+                        parsed.forEach(savedProgress => {
+                            const existingIndex = this.progressData.findIndex(p => p.id === savedProgress.id);
+                            if (existingIndex !== -1) {
+                                this.progressData[existingIndex] = savedProgress;
+                            }
+                        });
+                        console.log('Progress loaded from localStorage');
+                    }
+                } catch (error) {
+                    console.warn('Error loading progress from storage:', error);
+                }
+            }
+
+            hideLoading() {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('study-container').style.display = 'block';
+            }
+
+            showStudyContainer() {
+                document.getElementById('study-container').style.display = 'block';
+                document.getElementById('message').style.display = 'none';
+            }
+
+            showMessage(text) {
+                document.getElementById('message').textContent = text;
+                document.getElementById('message').style.display = 'block';
+                document.getElementById('study-container').style.display = 'none';
+            }
+        }
+
+        // Check if accessing via file:// protocol and show warning
+        if (window.location.protocol === 'file:') {
+            document.getElementById('instructions').style.display = 'block';
+        }
+
+        // Initialize app when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new StudyApp();
+        });
+    </script>
+</body>
+</html>

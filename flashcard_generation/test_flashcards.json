@@ -1,0 +1,52 @@
+[
+  {
+    "word_hiragana": "ように",
+    "word_katakana": "ヨウニ",
+    "word_kanji": "様に",
+    "word_romaji": "yō ni",
+    "english": "like; in the manner of",
+    "part_of_speech": "particle",
+    "example_sentence": "わたしは とりのように とべる。",
+    "example_translation": "I can fly like a bird."
+  },
+  {
+    "word_hiragana": "わたしは",
+    "word_katakana": "ワタシハ",
+    "word_kanji": "私",
+    "word_romaji": "watashi wa",
+    "english": "I (as the topic)",
+    "part_of_speech": "pronoun",
+    "example_sentence": "わたしはがくせいです。",
+    "example_translation": "I am a student."
+  },
+  {
+    "word_hiragana": "かれの",
+    "word_katakana": "カレノ",
+    "word_kanji": "彼の",
+    "word_romaji": "kare no",
+    "english": "his",
+    "part_of_speech": "pronoun",
+    "example_sentence": "かれのいえはおおきいです。",
+    "example_translation": "His house is big."
+  },
+  {
+    "word_hiragana": "その",
+    "word_katakana": "ソノ",
+    "word_kanji": "",
+    "word_romaji": "sono",
+    "english": "that",
+    "part_of_speech": "pronoun",
+    "example_sentence": "そのほんはおもしろいです。",
+    "example_translation": "That book is interesting."
+  },
+  {
+    "word_hiragana": "かれ",
+    "word_katakana": "カレ",
+    "word_kanji": "彼",
+    "word_romaji": "kare",
+    "english": "he",
+    "part_of_speech": "pronoun",
+    "example_sentence": "かれはがくせいです。",
+    "example_translation": "He is a student."
+  }
+]
