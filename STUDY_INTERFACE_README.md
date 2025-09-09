@@ -3,24 +3,24 @@
 ## 🚀 Quick Start
 
 1. **Install TTS dependencies (optional for audio):**
-   ```bash
-   cd kokoro
-   source tts_env/bin/activate  # Activate the virtual environment
-   pip install -r requirements_simple_tts.txt
-   ```
+```bash
+cd kokoro
+source tts_env/bin/activate  # Activate the virtual environment
+pip install -r requirements_simple_tts.txt
+```
 
 2. **Start the web server:**
-   ```bash
-   cd /Users/alexander/Documents/Code/japanese_study
-   python3 -m http.server 8000
-   ```
+```bash
+cd /Users/alexander/Documents/Code/japanese_study
+python3 -m http.server 8000
+```
 
 3. **Start TTS server (optional, in another terminal):**
-   ```bash
-   cd kokoro
-   source tts_env/bin/activate
-   python simple_tts_server.py
-   ```
+```bash
+cd kokoro
+source tts_env/bin/activate
+python simple_tts_server.py
+```
 
 4. **Open in browser:**
    - Go to: `http://127.0.0.1:8000/study.html`
